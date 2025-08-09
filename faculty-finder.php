@@ -15,6 +15,7 @@ if ( ! defined( 'WPINC' ) ) {
     die;
 }
 
+//custom post registration function
 function ffinder_register_staff_cpt() {
     $labels = [ /* ... Define labels like 'Staff', 'Add New Staff', etc. ... */ ];
     $args = [
