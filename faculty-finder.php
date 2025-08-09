@@ -32,3 +32,11 @@ function ffinder_register_staff_cpt() {
     register_post_type( 'staff', $args );
 }
 add_action( 'init', 'ffinder_register_staff_cpt' );
+
+function ffinder_register_taxonomies() {
+    // Register Department Taxonomy, linked to the 'staff' CPT
+    register_taxonomy( 'department', 'staff', [ /* ... args ... */ ] );
+    // Register Building Taxonomy, linked to the 'staff' CPT
+    register_taxonomy( 'building', 'staff', [ /* ... args ... */ ] );
+}
+add_action( 'init', 'ffinder_register_taxonomies' );
