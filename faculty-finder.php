@@ -204,3 +204,139 @@ function ffinder_display_directory_shortcode() {
 
 
 add_shortcode( 'faculty_finder', 'ffinder_display_directory_shortcode' );
+
+/**
+ * Enqueues the plugin's front-end CSS and JavaScript files.
+ *
+ * This function loads the main stylesheet and the AJAX script. It uses
+ * wp_localize_script to safely pass the AJAX URL from PHP to our
+ * JavaScript file, which is a WordPress best practice.
+ *
+ * @since 1.0.0
+ */
+function ffinder_enqueue_assets() {
+    // Enqueue the main stylesheet (as before).
+    wp_enqueue_style(
+        'faculty-finder-styles',
+        plugin_dir_url( __FILE__ ) . 'assets/css/ffinder-style.css',
+        [],
+        filemtime( plugin_dir_path( __FILE__ ) . 'assets/css/ffinder-style.css' )
+    );
+
+    // Enqueue the new AJAX JavaScript file.
+    // The ['jquery'] part tells WordPress this script needs jQuery to be loaded first.
+    wp_enqueue_script(
+        'faculty-finder-ajax',
+        plugin_dir_url( __FILE__ ) . 'assets/js/ffinder-ajax-scripts.js',
+        [ 'jquery' ],
+        filemtime( plugin_dir_path( __FILE__ ) . 'assets/js/ffinder-ajax-scripts.js' ),
+        true // The 'true' loads the script in the footer for better performance.
+    );
+
+    // Pass the AJAX URL to our JavaScript file.
+    wp_localize_script(
+        'faculty-finder-ajax',          // The handle of the script to receive the data.
+        'ffinder_ajax_object',          // The name of the JavaScript object that will contain the data.
+        [ 'ajax_url' => admin_url( 'admin-ajax.php' ) ] // The data to pass.
+    );
+}
+add_action( 'wp_enqueue_scripts', 'ffinder_enqueue_assets' );
+
+
+// -----------------------------------------------------------------
+// STEP 4.2: THE PHP AJAX HANDLER
+// -----------------------------------------------------------------
+// Add this new function to your `faculty-finder.php` file.
+// This is the server-side code that processes the filter requests.
+// -----------------------------------------------------------------
+
+/**
+ * Handles the AJAX request for filtering the staff directory.
+ *
+ * This function checks the security nonce, sanitizes the incoming filter data,
+ * builds a new WP_Query based on that data, and returns the resulting HTML.
+ * It is hooked into both 'wp_ajax_' (for logged-in users) and
+ * 'wp_ajax_nopriv_' (for visitors).
+ *
+ * @since 1.0.0
+ */
+function ffinder_ajax_filter_handler() {
+    // 1. SECURITY: Verify the nonce sent from our form.
+    if ( ! check_ajax_referer( 'ffinder_filter_nonce', '_wpnonce', false ) ) {
+        wp_send_json_error( 'Invalid security token.', 403 );
+        wp_die();
+    }
+
+    // 2. SANITIZE & GET DATA: Safely get the filter values from the POST request.
+    $department_id = isset( $_POST['department'] ) ? intval( $_POST['department'] ) : '';
+    $search_term   = isset( $_POST['search_term'] ) ? sanitize_text_field( $_POST['search_term'] ) : '';
+
+    // 3. BUILD QUERY ARGS: Create the arguments for our new database query.
+    $args = [
+        'post_type'      => 'staff',
+        'posts_per_page' => -1,
+        'orderby'        => 'title',
+        'order'          => 'ASC',
+    ];
+
+    // If a search term was provided, add the 's' parameter to the query.
+    if ( ! empty( $search_term ) ) {
+        $args['s'] = $search_term;
+    }
+
+    // If a department was selected, add a 'tax_query' to filter by that department.
+    if ( ! empty( $department_id ) ) {
+        $args['tax_query'] = [
+            [
+                'taxonomy' => 'department',
+                'field'    => 'term_id',
+                'terms'    => $department_id,
+            ],
+        ];
+    }
+
+    // 4. EXECUTE QUERY & GENERATE HTML: Run the query and build the response.
+    $staff_query = new WP_Query( $args );
+
+    if ( $staff_query->have_posts() ) {
+        while ( $staff_query->have_posts() ) {
+            $staff_query->the_post();
+            
+            // IMPORTANT: This HTML structure MUST MATCH the card structure in your shortcode function.
+            // Reusing the same structure ensures the styling remains consistent.
+            $job_title = get_post_meta( get_the_ID(), '_ffinder_job_title', true );
+            $email     = get_post_meta( get_the_ID(), '_ffinder_email', true );
+            $phone     = get_post_meta( get_the_ID(), '_ffinder_phone', true );
+            ?>
+            <div class="ffinder-card">
+                <div class="ffinder-card-image-wrap">
+                    <?php if ( has_post_thumbnail() ) : the_post_thumbnail( 'medium_large' ); else : ?><div class="ffinder-image-placeholder"></div><?php endif; ?>
+                </div>
+                <div class="ffinder-card-content">
+                    <h3 class="ffinder-card-name"><?php the_title(); ?></h3>
+                    <?php if ( ! empty( $job_title ) ) : ?><p class="ffinder-card-title"><?php echo esc_html( $job_title ); ?></p><?php endif; ?>
+                    <ul class="ffinder-card-contact">
+                        <?php if ( ! empty( $email ) ) : ?>
+                            <li class="ffinder-contact-email"><a href="mailto:<?php echo esc_attr( $email ); ?>"><?php echo esc_html( $email ); ?></a></li>
+                        <?php endif; ?>
+                        <?php if ( ! empty( $phone ) ) : ?>
+                            <li class="ffinder-contact-phone"><a href="tel:<?php echo esc_attr( preg_replace( '/[^0-9+]/', '', $phone ) ); ?>"><?php echo esc_html( $phone ); ?></a></li>
+                        <?php endif; ?>
+                    </ul>
+                </div>
+            </div>
+            <?php
+        }
+    } else {
+        // If no posts match the criteria, show a friendly message.
+        echo '<p>' . __( 'No staff members match your criteria.', 'faculty-finder' ) . '</p>';
+    }
+
+    // 5. END EXECUTION: Always use wp_die() at the end of an AJAX handler.
+    wp_die();
+}
+// Hook our handler to the 'wp_ajax_{action}' and 'wp_ajax_nopriv_{action}' hooks.
+// The {action} part must match the 'action' value from our JavaScript.
+add_action( 'wp_ajax_ffinder_filter_staff', 'ffinder_ajax_filter_handler' );
+add_action( 'wp_ajax_nopriv_ffinder_filter_staff', 'ffinder_ajax_filter_handler' );
+
