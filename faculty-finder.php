@@ -17,7 +17,28 @@ if ( ! defined( 'WPINC' ) ) {
 
 //custom post registration function
 function ffinder_register_staff_cpt() {
-    $labels = [ /* ... Define labels like 'Staff', 'Add New Staff', etc. ... */ ];
+        // Define the labels for the Staff CPT
+    $labels = [
+        'name'                  => _x( 'Staff', 'Post type general name', 'faculty-finder' ),
+        'singular_name'         => _x( 'Staff Member', 'Post type singular name', 'faculty-finder' ),
+        'menu_name'             => _x( 'Staff', 'Admin Menu text', 'faculty-finder' ),
+        'name_admin_bar'        => _x( 'Staff Member', 'Add New on Toolbar', 'faculty-finder' ),
+        'add_new'               => __( 'Add New', 'faculty-finder' ),
+        'add_new_item'          => __( 'Add New Staff Member', 'faculty-finder' ), // This fixes "Add New Post"
+        'new_item'              => __( 'New Staff Member', 'faculty-finder' ),
+        'edit_item'             => __( 'Edit Staff Member', 'faculty-finder' ),
+        'view_item'             => __( 'View Staff Member', 'faculty-finder' ),
+        'all_items'             => __( 'All Staff', 'faculty-finder' ),
+        'search_items'          => __( 'Search Staff', 'faculty-finder' ),
+        'parent_item_colon'     => __( 'Parent Staff Member:', 'faculty-finder' ),
+        'not_found'             => __( 'No staff members found.', 'faculty-finder' ),
+        'not_found_in_trash'    => __( 'No staff members found in Trash.', 'faculty-finder' ),
+        'featured_image'        => _x( 'Staff Member Photo', 'Overrides the “Featured Image” phrase for this post type.', 'faculty-finder' ),
+        'set_featured_image'    => _x( 'Set photo', 'Overrides the “Set featured image” phrase for this post type.', 'faculty-finder' ),
+        'remove_featured_image' => _x( 'Remove photo', 'Overrides the “Remove featured image” phrase for this post type.', 'faculty-finder' ),
+        'use_featured_image'    => _x( 'Use as photo', 'Overrides the “Use as featured image” phrase for this post type.', 'faculty-finder' ),
+    ];
+
     $args = [
         'label'               => __( 'Staff', 'faculty-finder' ),
         'labels'              => $labels,
