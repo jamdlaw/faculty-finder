@@ -55,11 +55,62 @@ function ffinder_register_staff_cpt() {
 add_action( 'init', 'ffinder_register_staff_cpt' );
 
 function ffinder_register_taxonomies() {
-    // Register Department Taxonomy, linked to the 'staff' CPT
-    register_taxonomy( 'department', 'staff', [ /* ... args ... */ ] );
-    // Register Building Taxonomy, linked to the 'staff' CPT
-    register_taxonomy( 'building', 'staff', [ /* ... args ... */ ] );
+
+    // Labels for the "Department" taxonomy
+    $department_labels = [
+        'name'              => _x( 'Departments', 'taxonomy general name', 'faculty-finder' ),
+        'singular_name'     => _x( 'Department', 'taxonomy singular name', 'faculty-finder' ),
+        'search_items'      => __( 'Search Departments', 'faculty-finder' ),
+        'all_items'         => __( 'All Departments', 'faculty-finder' ),
+        'parent_item'       => __( 'Parent Department', 'faculty-finder' ),
+        'parent_item_colon' => __( 'Parent Department:', 'faculty-finder' ),
+        'edit_item'         => __( 'Edit Department', 'faculty-finder' ),
+        'update_item'       => __( 'Update Department', 'faculty-finder' ),
+        'add_new_item'      => __( 'Add New Department', 'faculty-finder' ),
+        'new_item_name'     => __( 'New Department Name', 'faculty-finder' ),
+        'menu_name'         => __( 'Departments', 'faculty-finder' ), // This sets the menu text
+    ];
+
+    $department_args = [
+        'hierarchical'      => true,
+        'labels'            => $department_labels,
+        'show_ui'           => true,
+        'show_admin_column' => true,
+        'query_var'         => true,
+        'rewrite'           => [ 'slug' => 'department' ],
+    ];
+
+    // Register the "Department" taxonomy
+    register_taxonomy( 'department', [ 'staff' ], $department_args );
+
+    // --- Now, define separate labels for the "Building" taxonomy ---
+
+    // Labels for the "Building" taxonomy
+    $building_labels = [
+        'name'              => _x( 'Buildings', 'taxonomy general name', 'faculty-finder' ),
+        'singular_name'     => _x( 'Building', 'taxonomy singular name', 'faculty-finder' ),
+        'search_items'      => __( 'Search Buildings', 'faculty-finder' ),
+        'all_items'         => __( 'All Buildings', 'faculty-finder' ),
+        'edit_item'         => __( 'Edit Building', 'faculty-finder' ),
+        'update_item'       => __( 'Update Building', 'faculty-finder' ),
+        'add_new_item'      => __( 'Add New Building', 'faculty-finder' ),
+        'new_item_name'     => __( 'New Building Name', 'faculty-finder' ),
+        'menu_name'         => __( 'Buildings', 'faculty-finder' ), // This sets the menu text
+    ];
+
+    $building_args = [
+        'hierarchical'      => false, // Buildings don't need a hierarchy
+        'labels'            => $building_labels,
+        'show_ui'           => true,
+        'show_admin_column' => true,
+        'query_var'         => true,
+        'rewrite'           => [ 'slug' => 'building' ],
+    ];
+
+    // Register the "Building" taxonomy
+    register_taxonomy( 'building', [ 'staff' ], $building_args );
 }
+
 add_action( 'init', 'ffinder_register_taxonomies' );
 
 /**
