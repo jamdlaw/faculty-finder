@@ -114,6 +114,28 @@ function ffinder_register_taxonomies() {
 add_action( 'init', 'ffinder_register_taxonomies' );
 
 /**
+ * Changes the placeholder text for the title input field on the Staff edit screen.
+ *
+ * This function is hooked into the 'enter_title_placeholder' filter.
+ *
+ * @param string $placeholder The default placeholder text.
+ * @return string The modified placeholder text.
+ */
+function ffinder_change_title_placeholder( $placeholder ) {
+    // Get the current screen's post type
+    $screen = get_current_screen();
+
+    // Check if we are on the 'staff' post type edit screen
+    if ( isset( $screen->post_type ) && $screen->post_type == 'staff' ) {
+        return 'Enter full name here';
+    }
+
+    // For all other post types, return the original placeholder
+    return $placeholder;
+}
+add_filter( 'enter_title_here', 'ffinder_change_title_placeholder' );
+
+/**
  * Generates the HTML output for the [faculty_finder] shortcode.
  *
  * This function creates the filter form and displays the initial grid of staff members.
@@ -240,7 +262,6 @@ function ffinder_display_directory_shortcode() {
     // Return the complete HTML content that was captured.
     return ob_get_clean();
 }
-
 
 
 add_shortcode( 'faculty_finder', 'ffinder_display_directory_shortcode' );
