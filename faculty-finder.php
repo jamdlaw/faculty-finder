@@ -42,7 +42,7 @@ function ffinder_register_staff_cpt() {
     $args = [
         'label'               => __( 'Staff', 'faculty-finder' ),
         'labels'              => $labels,
-        'supports'            => [ 'title', 'editor', 'thumbnail' ], // Default fields to use
+        'supports'            => [ 'thumbnail' ], // Default fields to use
         'public'              => true,
         'show_in_menu'        => true,
         'menu_position'       => 5,
