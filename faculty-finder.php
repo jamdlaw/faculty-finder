@@ -398,3 +398,67 @@ function ffinder_ajax_filter_handler() {
 add_action( 'wp_ajax_ffinder_filter_staff', 'ffinder_ajax_filter_handler' );
 add_action( 'wp_ajax_nopriv_ffinder_filter_staff', 'ffinder_ajax_filter_handler' );
 
+// 1. Function to add the meta box
+function ffinder_add_custom_meta_box() {
+    add_meta_box(
+        'ffinder_staff_details',          // Unique ID for the meta box
+        'Staff Member Details',           // Title of the meta box
+        'ffinder_display_meta_box_callback', // Callback function to display the HTML
+        'staff',                          // The screen to show it on (our CPT)
+        'normal',                         // Context (normal, side, advanced)
+        'high'                            // Priority (high, low)
+    );
+}
+add_action( 'add_meta_boxes', 'ffinder_add_custom_meta_box' );
+
+// 2. Callback function to display the HTML fields
+function ffinder_display_meta_box_callback( $post ) {
+    // Add a nonce field for security
+    wp_nonce_field( 'ffinder_save_meta_box_data', 'ffinder_meta_box_nonce' );
+
+    // Get existing values from the database
+    $first_name = get_post_meta( $post->ID, '_ffinder_first_name', true );
+    $last_name  = get_post_meta( $post->ID, '_ffinder_last_name', true );
+    $email      = get_post_meta( $post->ID, '_ffinder_email', true );
+    $phone      = get_post_meta( $post->ID, '_ffinder_phone', true );
+
+    // Display the fields
+    echo '<p><label for="ffinder_first_name">First Name: </label>';
+    echo '<input type="text" id="ffinder_first_name" name="ffinder_first_name" value="' . esc_attr( $first_name ) . '" size="25" /></p>';
+
+    echo '<p><label for="ffinder_last_name">Last Name: </label>';
+    echo '<input type="text" id="ffinder_last_name" name="ffinder_last_name" value="' . esc_attr( $last_name ) . '" size="25" /></p>';
+
+    echo '<p><label for="ffinder_email">Email Address: </label>';
+    echo '<input type="email" id="ffinder_email" name="ffinder_email" value="' . esc_attr( $email ) . '" size="25" /></p>';
+
+    echo '<p><label for="ffinder_phone">Phone Number: </label>';
+    echo '<input type="text" id="ffinder_phone" name="ffinder_phone" value="' . esc_attr( $phone ) . '" size="25" /></p>';
+}
+
+// 3. Function to save the meta box data
+function ffinder_save_meta_box_data( $post_id ) {
+    // Check if our nonce is set and valid.
+    if ( ! isset( $_POST['ffinder_meta_box_nonce'] ) || ! wp_verify_nonce( $_POST['ffinder_meta_box_nonce'], 'ffinder_save_meta_box_data' ) ) {
+        return;
+    }
+
+    // Don't save on autosave.
+    if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) {
+        return;
+    }
+
+    // Check the user's permissions.
+    if ( ! current_user_can( 'edit_post', $post_id ) ) {
+        return;
+    }
+
+    // Sanitize and save the data.
+    $fields = ['ffinder_first_name', 'ffinder_last_name', 'ffinder_email', 'ffinder_phone'];
+    foreach ($fields as $field) {
+        if (isset($_POST[$field])) {
+            update_post_meta($post_id, '_' . $field, sanitize_text_field($_POST[$field]));
+        }
+    }
+}
+add_action( 'save_post', 'ffinder_save_meta_box_data' );
