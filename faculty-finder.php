@@ -462,3 +462,41 @@ function ffinder_save_meta_box_data( $post_id ) {
     }
 }
 add_action( 'save_post', 'ffinder_save_meta_box_data' );
+
+/**
+ * Auto-generates the post title from the first and last name meta fields.
+ *
+ * @param int $post_id The ID of the post being saved.
+ */
+function ffinder_set_post_title( $post_id ) {
+    // Only run on our 'staff' post type
+    if ( get_post_type( $post_id ) !== 'staff' ) {
+        return;
+    }
+
+    // Check if the first or last name was submitted
+    if ( isset( $_POST['ffinder_first_name'] ) && isset( $_POST['ffinder_last_name'] ) ) {
+        $first_name = sanitize_text_field( $_POST['ffinder_first_name'] );
+        $last_name  = sanitize_text_field( $_POST['ffinder_last_name'] );
+        $full_name  = trim( $first_name . ' ' . $last_name );
+
+        // If the full name is empty, do nothing
+        if ( empty( $full_name ) ) {
+            return;
+        }
+
+        // Unhook this function to prevent an infinite loop
+        remove_action( 'save_post', 'ffinder_set_post_title' );
+
+        // Update the post title
+        wp_update_post( [
+            'ID'         => $post_id,
+            'post_title' => $full_name,
+        ] );
+
+        // Re-hook the function
+        add_action( 'save_post', 'ffinder_set_post_title' );
+    }
+}
+// Run this action with a later priority (e.g., 20) to ensure meta data is saved first.
+add_action( 'save_post', 'ffinder_set_post_title', 20 );
