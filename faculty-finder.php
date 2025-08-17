@@ -110,7 +110,6 @@ function ffinder_register_taxonomies() {
     // Register the "Building" taxonomy
     register_taxonomy( 'building', [ 'staff' ], $building_args );
 }
-
 add_action( 'init', 'ffinder_register_taxonomies' );
 
 /**
@@ -262,8 +261,6 @@ function ffinder_display_directory_shortcode() {
     // Return the complete HTML content that was captured.
     return ob_get_clean();
 }
-
-
 add_shortcode( 'faculty_finder', 'ffinder_display_directory_shortcode' );
 
 /**
