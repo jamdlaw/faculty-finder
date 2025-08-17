@@ -492,6 +492,7 @@ function ffinder_set_post_title( $post_id ) {
         wp_update_post( [
             'ID'         => $post_id,
             'post_title' => $full_name,
+            'post_name'  => sanitize_title( $full_name ),
         ] );
 
         // Re-hook the function
