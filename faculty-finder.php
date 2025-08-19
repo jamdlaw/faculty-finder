@@ -468,36 +468,52 @@ add_action( 'save_post', 'ffinder_save_meta_box_data' );
  *
  * @param int $post_id The ID of the post being saved.
  */
-function ffinder_set_post_title( $post_id ) {
-    // Only run on our 'staff' post type
-    if ( get_post_type( $post_id ) !== 'staff' ) {
+
+/**
+ * Auto-generates the post title and slug from the first and last name meta fields.
+ *
+ * This refactored function includes checks to prevent unnecessary database writes
+ * and avoid infinite loops without needing to remove/add the action.
+ *
+ * @param int     $post_id The ID of the post being saved.
+ * @param WP_Post $post    The post object.
+ */
+function ffinder_set_post_title( $post_id, $post ) {
+    // 1. Check if the meta box data was submitted. If not, bail early.
+    if ( ! isset( $_POST['ffinder_first_name'], $_POST['ffinder_last_name'] ) ) {
         return;
     }
 
-    // Check if the first or last name was submitted
-    if ( isset( $_POST['ffinder_first_name'] ) && isset( $_POST['ffinder_last_name'] ) ) {
-        $first_name = sanitize_text_field( $_POST['ffinder_first_name'] );
-        $last_name  = sanitize_text_field( $_POST['ffinder_last_name'] );
-        $full_name  = trim( $first_name . ' ' . $last_name );
-
-        // If the full name is empty, do nothing
-        if ( empty( $full_name ) ) {
-            return;
-        }
-
-        // Unhook this function to prevent an infinite loop
-        remove_action( 'save_post', 'ffinder_set_post_title' );
-
-        // Update the post title
-        wp_update_post( [
-            'ID'         => $post_id,
-            'post_title' => $full_name,
-            'post_name'  => sanitize_title( $full_name ),
-        ] );
-
-        // Re-hook the function
-        add_action( 'save_post', 'ffinder_set_post_title' );
+    // 2. Verify this is the correct post type and not an autosave.
+    if ( 'staff' !== $post->post_type || defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) {
+        return;
     }
+
+    // 3. Check user permissions.
+    if ( ! current_user_can( 'edit_post', $post_id ) ) {
+        return;
+    }
+
+    // 4. Sanitize the input and create the new title and slug.
+    $first_name = sanitize_text_field( $_POST['ffinder_first_name'] );
+    $last_name  = sanitize_text_field( $_POST['ffinder_last_name'] );
+    $full_name  = trim( "$first_name $last_name" );
+    $new_slug   = sanitize_title( $full_name );
+
+    // 5. THE KEY: Check if the title or slug actually needs updating.
+    // If the new values are the same as the old ones, we stop here to prevent the loop.
+    if ( $post->post_title === $full_name && $post->post_name === $new_slug ) {
+        return;
+    }
+
+    // 6. If an update is needed, we update the database.
+    // We can safely call wp_update_post because our checks above will prevent
+    // this function from running on the update we are about to perform.
+    wp_update_post( [
+        'ID'         => $post_id,
+        'post_title' => $full_name,
+        'post_name'  => $new_slug,
+    ] );
 }
-// Run this action with a later priority (e.g., 20) to ensure meta data is saved first.
-add_action( 'save_post', 'ffinder_set_post_title', 20 );
+// Update the add_action call to accept 2 arguments.
+add_action( 'save_post', 'ffinder_set_post_title', 20, 2 );
