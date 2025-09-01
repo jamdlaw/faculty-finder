@@ -300,14 +300,6 @@ function ffinder_enqueue_assets() {
 }
 add_action( 'wp_enqueue_scripts', 'ffinder_enqueue_assets' );
 
-
-// -----------------------------------------------------------------
-// STEP 4.2: THE PHP AJAX HANDLER
-// -----------------------------------------------------------------
-// Add this new function to your `faculty-finder.php` file.
-// This is the server-side code that processes the filter requests.
-// -----------------------------------------------------------------
-
 /**
  * Handles the AJAX request for filtering the staff directory.
  *
